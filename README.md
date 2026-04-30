@@ -28,13 +28,12 @@
 
 | Menu | IP Tracker |
 |------|------------|
-| ![Menu](assets/menu.png) | ![IP Tracker](assets/ip_tracker.png) |
-| *← drop a screenshot of the main menu here* | *← drop a screenshot of IP tracker output here* |
+| <img src="assets/menu.png" width="400"/> | <img src="assets/ip_tracker.png" width="400"/> |
 
 | Phone Tracker | Username Tracker |
 |---------------|-----------------|
-| ![Phone](assets/phone.png) | ![Username](assets/username.png) |
-| *← drop a screenshot of phone tracker output here* | *← drop a screenshot of username tracker output here* |
+| <img src="assets/phone.png" width="400"/> | <img src="assets/username.png" width="400"/> |
+
 
 ---
 
