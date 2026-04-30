@@ -4,6 +4,7 @@ goghost.exe
 
 # Build output
 *.exe
+*.exe~
 *.out
 
 # Go workspace
