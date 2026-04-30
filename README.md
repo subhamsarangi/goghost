@@ -5,7 +5,6 @@
 **A fast, single-binary OSINT CLI tool written in Go.**
 
 ![GoGhost Banner](assets/banner.png)
-*← drop a screenshot of the CLI banner here*
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
