@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -51,7 +52,7 @@ func printBanner() {
 		"  /  .- -.  \\                                  \n"+
 		" |  (o) (o)  |        "+White+"--------------------------------\n"+
 		" |     __    |        "+White+"| "+Green+"GOGHOST - TRACKER TOOL       "+White+"|\n"+
-		" |    (__}   |        "+White+"|    "+Green+"@CODE BY SUBHAMSARANGI   "+White+"|\n"+
+		" |    (__}   |        "+White+"|    "+White+                                   "|\n"+
 		"  \\          /        "+White+"--------------------------------\n"+
 		"   `-.____.-'                                  \n"+
 		"   :        `.                                 \n"+
@@ -208,10 +209,11 @@ type SocialMediaSite struct {
 }
 
 type CheckResult struct {
-	Name   string
-	URL    string
-	Signup string
-	Found  bool
+	Name          string
+	URL           string
+	Signup        string
+	Found         bool
+	Unverifiable  bool
 }
 
 func usernameTrack() {
@@ -248,22 +250,16 @@ func usernameTrack() {
 
 	// bodyCheck: sites that return 200 for missing profiles (JS-rendered or soft 404).
 	// mustContain = at least one phrase must be present for profile to be "found".
-	// mustAbsent  = if any phrase present, profile not found (fallback for sites with stable server-rendered signals).
+	// jsOnly      = fully JS-rendered, cannot verify via raw HTTP.
 	type bodyRule struct {
-		mustContain []string // profile EXISTS if any match
-		mustAbsent  []string // profile MISSING if any match (checked only when mustContain empty)
+		mustContain []string
+		mustAbsent  []string
+		jsOnly      bool
 	}
 	bodyChecks := map[string]bodyRule{
-		// X embeds canonical URL with username in server HTML when profile exists
-		"X (Twitter)": {mustContain: []string{
-			`"canonicalUrl":"https://x.com/` + username,
-			`canonical" content="https://x.com/` + username,
-			`twitter:site" content="@` + username,
-		}},
-		// Facebook: profile page has og:url with username; error page does not
-		"Facebook": {mustContain: []string{
-			`og:url" content="https://www.facebook.com/` + username,
-		}},
+		// X and Facebook are fully React-rendered — raw HTML has zero profile data
+		"X (Twitter)": {jsOnly: true},
+		"Facebook":    {jsOnly: true},
 		// Quora: profile page has og:url; 404 page does not
 		"Quora": {mustContain: []string{
 			`og:url" content="https://www.quora.com/profile/` + username,
@@ -284,6 +280,12 @@ func usernameTrack() {
 			defer wg.Done()
 
 			rule, needsBodyCheck := bodyChecks[s.Name]
+
+			// JS-only sites cannot be verified via raw HTTP
+			if needsBodyCheck && rule.jsOnly {
+				results <- CheckResult{Name: s.Name, URL: s.URL, Signup: s.Signup, Unverifiable: true}
+				return
+			}
 
 			method := http.MethodHead
 			if needsBodyCheck {
@@ -318,7 +320,6 @@ func usernameTrack() {
 				body := strings.ToLower(string(buf[:n]))
 
 				if len(rule.mustContain) > 0 {
-					// Positive detection: profile exists only if a known marker is present
 					for _, phrase := range rule.mustContain {
 						if strings.Contains(body, strings.ToLower(phrase)) {
 							results <- CheckResult{Name: s.Name, URL: s.URL, Signup: s.Signup, Found: true}
@@ -329,7 +330,6 @@ func usernameTrack() {
 					return
 				}
 
-				// Negative detection fallback: missing if error phrase found
 				for _, phrase := range rule.mustAbsent {
 					if strings.Contains(body, strings.ToLower(phrase)) {
 						results <- CheckResult{Name: s.Name, URL: s.URL, Signup: s.Signup, Found: false}
@@ -357,9 +357,19 @@ func usernameTrack() {
 		collected = append(collected, r)
 	}
 
+	// Sort: verified results first, unverifiable (Facebook, X) at the end
+	sort.Slice(collected, func(i, j int) bool {
+		if collected[i].Unverifiable != collected[j].Unverifiable {
+			return !collected[i].Unverifiable
+		}
+		return collected[i].Name < collected[j].Name
+	})
+
 	fmt.Printf("\n %s========== %sSHOW INFORMATION USERNAME %s==========\n\n", White, Green, White)
 	for _, r := range collected {
-		if r.Found {
+		if r.Unverifiable {
+			fmt.Printf(" %s[ %s? %s] %s : %sCheck manually → %s%s  %s| Sign up: %s%s\n", White, Cyan, White, r.Name, Cyan, Cyan, r.URL, White, Cyan, r.Signup)
+		} else if r.Found {
 			fmt.Printf(" %s[ %s+ %s] %s : %s%s\n", White, Green, White, r.Name, Green, r.URL)
 		} else {
 			fmt.Printf(" %s[ %s- %s] %s : %sNot found  %s→ Sign up: %s%s\n", White, Yellow, White, r.Name, Yellow, White, Cyan, r.Signup)
@@ -396,7 +406,6 @@ func printMenu() {
 / /_/ / / /_/ / /_/ / / / / /_/ (__  ) /_  
 \____/_/\____/\____/_/ /_/\____/____/\__/  
 
-         `+White+`[ + ]  C O D E   B Y  S U B H A M S A R A N G I  [ + ]
 `+Reset)
 
 	fmt.Fprintf(os.Stderr, `
