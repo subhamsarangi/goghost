@@ -1,0 +1,18 @@
+# Binaries
+goghost
+goghost.exe
+
+# Build output
+*.exe
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
