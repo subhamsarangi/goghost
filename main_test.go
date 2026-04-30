@@ -164,9 +164,9 @@ func TestUsernameTrack_Concurrent(t *testing.T) {
 	defer srv.Close()
 
 	sites := []SocialMediaSite{
-		{"Site1", srv.URL + "/user"},
-		{"Site2", srv.URL + "/user"},
-		{"Site3", srv.URL + "/user"},
+		{"Site1", srv.URL + "/user", ""},
+		{"Site2", srv.URL + "/user", ""},
+		{"Site3", srv.URL + "/user", ""},
 	}
 
 	client := &http.Client{Timeout: 5 * time.Second}
